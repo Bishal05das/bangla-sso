@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "accounts",
     "rest_framework",
     "axes",
+    "oauth2_provider",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -189,3 +190,32 @@ CSRF_TRUSTED_ORIGINS = [
     o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
 ]
 
+
+# --- OpenID Connect provider (django-oauth-toolkit) ---
+_oidc_key_path = Path(os.environ["OIDC_RSA_PRIVATE_KEY_PATH"])
+if not _oidc_key_path.is_absolute():
+    _oidc_key_path = BASE_DIR / _oidc_key_path
+
+OAUTH2_PROVIDER = {
+    "OIDC_ENABLED": True,
+    "OIDC_ISS_ENDPOINT": os.environ["OIDC_ISSUER"],
+    "OIDC_RSA_PRIVATE_KEY": _oidc_key_path.read_text(),
+    "OAUTH2_VALIDATOR_CLASS": "accounts.oidc.IdPOAuth2Validator",
+
+    "SCOPES": {
+        "openid": "Sign you in",
+        "profile": "See your name",
+        "email": "See your email address",
+    },
+    "DEFAULT_SCOPES": ["openid"],
+
+    "PKCE_REQUIRED": True,
+
+    "AUTHORIZATION_CODE_EXPIRE_SECONDS": 60,
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 600,              # 10 minutes
+    "ID_TOKEN_EXPIRE_SECONDS": 600,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 14,  # 14 days
+    "ROTATE_REFRESH_TOKEN": True,
+
+    "ALLOWED_REDIRECT_URI_SCHEMES": ["http", "https"] if DEBUG else ["https"],
+}
