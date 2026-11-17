@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,6 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "accounts",
+    "rest_framework",
+    "axes",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -62,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -141,3 +145,47 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# --- Authentication ---
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",   # must be first: rejects locked-out users early
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# Frontend route (same origin via proxy). DOT's /o/authorize/ redirects here.
+LOGIN_URL = "/login/"
+
+# --- Django REST Framework ---
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.authentication.IdPSessionAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+}
+
+# --- Brute-force protection (django-axes) ---
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=15)
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+AXES_USERNAME_CALLABLE = "accounts.axes.get_axes_username"
+AXES_LOCKOUT_CALLABLE = "accounts.axes.lockout_response"
+AXES_USERNAME_FORM_FIELD = "username"   # Django's auth form always uses "username", even for email login
+
+
+# --- SSO session cookie ---
+SESSION_COOKIE_NAME = "idp_session"
+SESSION_COOKIE_AGE = 60 * 60 * 8        # SSO session lasts 8 hours
+SESSION_COOKIE_HTTPONLY = True          # JavaScript can never read it
+SESSION_COOKIE_SAMESITE = "Lax"         # required: cookie must survive cross-site SSO redirects
+SESSION_COOKIE_SECURE = not DEBUG
+
+# --- CSRF ---
+CSRF_COOKIE_HTTPONLY = False            # frontend JS reads it and sends it as X-CSRFToken
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
+]
+
