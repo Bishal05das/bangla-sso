@@ -10,7 +10,8 @@ PASSWORD = "correct-horse-battery-staple"
 class AuthAPITestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user("alice@example.com", PASSWORD)
+        cls.user = User.objects.create_user("alice@example.com", PASSWORD, email_verified=True)
+
 
     def setUp(self):
         self.client = APIClient()

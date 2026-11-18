@@ -163,6 +163,10 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    "DEFAULT_THROTTLE_RATES": {
+        "auth-email": "5/hour",    # endpoints that send email
+        "auth-token": "30/hour",   # endpoints that check emailed tokens
+    },
 }
 
 # --- Brute-force protection (django-axes) ---
@@ -219,3 +223,19 @@ OAUTH2_PROVIDER = {
 
     "ALLOWED_REDIRECT_URI_SCHEMES": ["http", "https"] if DEBUG else ["https"],
 }
+
+
+# --- Frontend & email ---
+FRONTEND_URL = os.environ["FRONTEND_URL"].rstrip("/")
+
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "SSO <no-reply@localhost>")
+
+PASSWORD_RESET_TIMEOUT = 60 * 60          # reset links valid for 1 hour
+EMAIL_VERIFICATION_MAX_AGE = 60 * 60 * 24  # verification links valid for 24 hours
