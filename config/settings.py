@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "axes",
     "oauth2_provider",
+    "clients",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -222,7 +223,23 @@ OAUTH2_PROVIDER = {
     "ROTATE_REFRESH_TOKEN": True,
 
     "ALLOWED_REDIRECT_URI_SCHEMES": ["http", "https"] if DEBUG else ["https"],
+
+
+    # RP-Initiated Logout (/o/logout/)
+    "OIDC_RP_INITIATED_LOGOUT_ENABLED": True,
+    "OIDC_RP_INITIATED_LOGOUT_ALWAYS_PROMPT": False,       # skip prompt when id_token_hint proves the request
+    "OIDC_RP_INITIATED_LOGOUT_STRICT_REDIRECT_URIS": True,
+    "OIDC_RP_INITIATED_LOGOUT_ACCEPT_EXPIRED_TOKENS": True, # ID tokens live 10 min; logout may come later
+    "OIDC_RP_INITIATED_LOGOUT_DELETE_TOKENS": True,
 }
+
+# Needed so our own models can reference DOT's (swappable) Application model.
+OAUTH2_PROVIDER_APPLICATION_MODEL = "oauth2_provider.Application"
+
+# --- Back-channel logout ---
+BACKCHANNEL_LOGOUT_TIMEOUT_SECONDS = 5
+BACKCHANNEL_LOGOUT_MAX_ATTEMPTS = 6       # ~16 minutes of retries in total
+
 
 
 # --- Frontend & email ---

@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path, re_path
 from oauth2_provider import views as oauth2_views
+from clients.views import SSOLogoutView
 
 # Only the endpoints an OIDC provider needs. django-oauth-toolkit's default
 # urls.py also exposes self-service app registration pages, which would let ANY
@@ -32,6 +33,8 @@ oauth2_urlpatterns = [
     ),
     path(".well-known/jwks.json", oauth2_views.JwksInfoView.as_view(), name="jwks-info"),
     path("userinfo/", oauth2_views.UserInfoView.as_view(), name="user-info"),
+    path("userinfo/", oauth2_views.UserInfoView.as_view(), name="user-info"),
+    path("logout/", SSOLogoutView.as_view(), name="rp-initiated-logout"),
 ]
 
 urlpatterns = [

@@ -12,6 +12,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from clients.sessions import end_sso_session
+
+
 
 from .emails import send_account_exists_email, send_password_reset_email, send_verification_email
 from .forms import EmailAuthenticationForm
@@ -24,7 +27,7 @@ from .serializers import (
     UserSerializer,
     password_errors,
 )
-from .services import revoke_oauth_tokens, unlock_user
+from .services import unlock_user
 from .tokens import read_email_verification_token
 
 
@@ -86,6 +89,8 @@ class LogoutView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        if request.user.is_authenticated:
+            end_sso_session(request.user)
         logout(request._request)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -225,6 +230,6 @@ class PasswordResetConfirmView(PublicAuthView):
         user.email_verified = True  # the reset link proved they control this inbox
         user.save(update_fields=["password", "email_verified"])
 
-        revoke_oauth_tokens(user)  # sign out of every client app
+        end_sso_session(user)  # sign out of every client app
         unlock_user(user)          # clear brute-force lockout
         return Response({"detail": "Your password has been reset. You can now sign in."})
